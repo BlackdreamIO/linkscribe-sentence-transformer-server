@@ -1,5 +1,5 @@
 fastapi
-uvicorn
-transformers
 onnxruntime
 numpy
+tokenizers
+uvicorn   # optional for local testing
