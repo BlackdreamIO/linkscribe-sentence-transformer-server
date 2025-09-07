@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import numpy as np
 from tokenizers import Tokenizer
 from tokenizers.pre_tokenizers import Whitespace
+from mangum import Mangum
 
 # ------------------------------
 # 1️⃣ Define a temporary folder
@@ -71,9 +72,15 @@ app = FastAPI()
 class EmbedRequest(BaseModel):
     sentences: list[str]
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/embed")
 def embed(request: EmbedRequest):
     onnx_inputs = encode_sentences(request.sentences)
     outputs = session.run(None, onnx_inputs)[0]
     embeddings = normalize(outputs).tolist()
     return {"embeddings": embeddings}
+
+handler = Mangum(app)
