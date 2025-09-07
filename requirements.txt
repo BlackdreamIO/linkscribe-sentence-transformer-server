@@ -2,4 +2,4 @@ fastapi
 onnxruntime
 numpy
 tokenizers
-uvicorn   # optional for local testing
+#uvicorn   # optional for local testing

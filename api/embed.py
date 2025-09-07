@@ -1,22 +1,51 @@
-# api/embed.py
+import os
+import platform
+import requests
+import onnxruntime as ort
 from fastapi import FastAPI
 from pydantic import BaseModel
-import onnxruntime as ort
 import numpy as np
 from tokenizers import Tokenizer
 from tokenizers.pre_tokenizers import Whitespace
-import os
 
-# Load ONNX model
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "miniv2-quant.onnx")
+# ------------------------------
+# 1️⃣ Define a temporary folder
+# ------------------------------
+if platform.system() == "Windows":
+    tmp_dir = os.path.join(os.getcwd(), "tmp")  # local tmp folder
+    os.makedirs(tmp_dir, exist_ok=True)
+else:
+    tmp_dir = "/tmp"
+
+MODEL_PATH = os.path.join(tmp_dir, "miniv2-quant.onnx")
+
+# ------------------------------
+# 2️⃣ Download ONNX model if missing
+# ------------------------------
+MODEL_URL = "https://drive.google.com/uc?export=download&id=1OQdBp2IWx_FEpk7XjTsGpA9XKHltyi7-"
+
+if not os.path.exists(MODEL_PATH):
+    print("🔃 Downloading ONNX model...")
+    r = requests.get(MODEL_URL)
+    with open(MODEL_PATH, "wb") as f:
+        f.write(r.content)
+    print("✅ Download complete!")
+
+# ------------------------------
+# 3️⃣ Load ONNX Runtime
+# ------------------------------
 session = ort.InferenceSession(MODEL_PATH)
 
-# Load tokenizer
+# ------------------------------
+# 4️⃣ Load tokenizer
+# ------------------------------
 TOKENIZER_PATH = "sentence-transformers/all-MiniLM-L6-v2"
 tokenizer = Tokenizer.from_pretrained(TOKENIZER_PATH)
 tokenizer.pre_tokenizer = Whitespace()
 
-# Helper functions
+# ------------------------------
+# 5️⃣ Helpers
+# ------------------------------
 def encode_sentences(sentences):
     encodings = [tokenizer.encode(s) for s in sentences]
     max_len = max(len(e.ids) for e in encodings)
@@ -34,7 +63,9 @@ def encode_sentences(sentences):
 def normalize(vecs):
     return vecs / np.linalg.norm(vecs, axis=1, keepdims=True)
 
-# FastAPI app
+# ------------------------------
+# 6️⃣ FastAPI app
+# ------------------------------
 app = FastAPI()
 
 class EmbedRequest(BaseModel):
